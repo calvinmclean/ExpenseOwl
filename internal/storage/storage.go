@@ -70,6 +70,7 @@ type BackendType string
 const (
 	BackendTypeJSON     BackendType = "json"
 	BackendTypePostgres BackendType = "postgres"
+	BackendTypeSQLite   BackendType = "sqlite"
 )
 
 // config for the storage backend
@@ -115,6 +116,8 @@ func backendTypeFromEnv(env string) BackendType {
 		return BackendTypeJSON
 	case "postgres":
 		return BackendTypePostgres
+	case "sqlite":
+		return BackendTypeSQLite
 	default:
 		return BackendTypeJSON
 	}
@@ -145,6 +148,8 @@ func InitializeStorage() (Storage, error) {
 		return InitializeJsonStore(baseConfig)
 	case BackendTypePostgres:
 		return InitializePostgresStore(baseConfig)
+	case BackendTypeSQLite:
+		return InitializeSQLiteStore(baseConfig)
 	}
 	return nil, fmt.Errorf("invalid data store: %s", baseConfig.StorageType)
 }
