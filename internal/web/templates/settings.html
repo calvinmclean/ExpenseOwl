@@ -672,7 +672,7 @@
                 category: document.getElementById('editRecurringCategory').value,
                 tags: Array.from(editFormSelectedTags),
                 interval: document.getElementById('editRecurringInterval').value,
-                startDate: new Date(document.getElementById('editRecurringStartDate').value).toISOString(),
+                startDate: getISODateWithLocalTime(document.getElementById('editRecurringStartDate').value),
                 occurrences: parseInt(document.getElementById('editRecurringOccurrences').value, 10)
             };
             
