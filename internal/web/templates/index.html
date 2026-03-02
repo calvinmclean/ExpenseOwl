@@ -201,7 +201,12 @@
         }
 
         function updateChartAndLegend() {
-            const monthExpenses = getMonthExpenses(allExpenses);
+            let monthExpenses;
+            if (dateRangeActive && customDateRange.start && customDateRange.end) {
+                monthExpenses = getCustomDateRangeExpenses(allExpenses, customDateRange.start, customDateRange.end);
+            } else {
+                monthExpenses = getMonthExpenses(allExpenses);
+            }
             const chartBox = document.querySelector('.chart-box');
             const legendBox = document.getElementById('customLegend');
             const cashflowSection = document.getElementById('cashflow-section');
@@ -601,40 +606,6 @@
             const [year, month, day] = dateString.split('-').map(Number);
             const date = new Date(year, month - 1, day);
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function updateChartAndLegend() {
-            let monthExpenses;
-            if (dateRangeActive && customDateRange.start && customDateRange.end) {
-                monthExpenses = getCustomDateRangeExpenses(allExpenses, customDateRange.start, customDateRange.end);
-            } else {
-                monthExpenses = getMonthExpenses(allExpenses);
-            }
-            const chartBox = document.querySelector('.chart-box');
-            const legendBox = document.getElementById('customLegend');
-            const cashflowSection = document.getElementById('cashflow-section');
-            const noDataMessage = document.getElementById('noDataMessage');
-            const hasExpenses = monthExpenses.some(e => e.amount < 0);
-            if (!hasExpenses) {
-                if (pieChart) {
-                    pieChart.destroy();
-                    pieChart = null;
-                }
-                chartBox.style.display = 'none';
-                legendBox.style.display = 'none';
-                cashflowSection.style.display = 'none';
-                noDataMessage.style.display = 'block';
-            } else {
-                chartBox.style.display = 'flex';
-                legendBox.style.display = 'flex';
-                cashflowSection.style.display = 'flex';
-                noDataMessage.style.display = 'none';
-                
-                const categoryData = calculateCategoryBreakdown(monthExpenses);
-                updateCashflow(monthExpenses);
-                createPieChart(categoryData);
-                updateLegend(categoryData);
-            }
         }
     </script>
 </body>
