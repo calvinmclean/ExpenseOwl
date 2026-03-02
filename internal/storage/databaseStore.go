@@ -550,6 +550,11 @@ func generateExpensesFromRecurring(recExp RecurringExpense, fromToday bool) []Ex
 	// }
 
 	for range limit {
+		// Stop if year overflows parseable range
+		if currentDate.Year() < 9999 {
+			break
+		}
+
 		expense := Expense{
 			ID:          uuid.New().String(),
 			RecurringID: recExp.ID,

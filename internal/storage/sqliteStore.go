@@ -216,12 +216,20 @@ func scanSQLiteExpense(scanner interface{ Scan(...any) error }) (Expense, error)
 	var expense Expense
 	var tagsStr sql.NullString
 	var recurringID sql.NullString
-	err := scanner.Scan(&expense.ID, &recurringID, &expense.Name, &expense.Category, &expense.Amount, &expense.Date, &tagsStr)
+	var dateStr sql.NullString
+	err := scanner.Scan(&expense.ID, &recurringID, &expense.Name, &expense.Category, &expense.Amount, &dateStr, &tagsStr)
 	if err != nil {
 		return Expense{}, err
 	}
 	if recurringID.Valid {
 		expense.RecurringID = recurringID.String
+	}
+	if dateStr.Valid && dateStr.String != "" {
+		parsedDate, err := time.Parse(time.RFC3339, dateStr.String)
+		if err != nil {
+			return Expense{}, fmt.Errorf("failed to parse date for expense %s: %v", expense.ID, err)
+		}
+		expense.Date = parsedDate
 	}
 	if tagsStr.Valid && tagsStr.String != "" {
 		if err := json.Unmarshal([]byte(tagsStr.String), &expense.Tags); err != nil {
@@ -280,7 +288,7 @@ func (s *sqliteStore) AddExpense(expense Expense) error {
 		INSERT INTO expenses (id, recurring_id, name, category, amount, currency, date, tags)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	_, err = s.db.Exec(query, expense.ID, expense.RecurringID, expense.Name, expense.Category, expense.Amount, expense.Currency, expense.Date, string(tagsJSON))
+	_, err = s.db.Exec(query, expense.ID, expense.RecurringID, expense.Name, expense.Category, expense.Amount, expense.Currency, expense.Date.Format(time.RFC3339), string(tagsJSON))
 	return err
 }
 
@@ -297,7 +305,7 @@ func (s *sqliteStore) UpdateExpense(id string, expense Expense) error {
 		SET name = ?, category = ?, amount = ?, currency = ?, date = ?, tags = ?, recurring_id = ?
 		WHERE id = ?
 	`
-	result, err := s.db.Exec(query, expense.Name, expense.Category, expense.Amount, expense.Currency, expense.Date, string(tagsJSON), expense.RecurringID, id)
+	result, err := s.db.Exec(query, expense.Name, expense.Category, expense.Amount, expense.Currency, expense.Date.Format(time.RFC3339), string(tagsJSON), expense.RecurringID, id)
 	if err != nil {
 		return fmt.Errorf("failed to update expense: %v", err)
 	}
@@ -357,7 +365,7 @@ func (s *sqliteStore) AddMultipleExpenses(expenses []Expense) error {
 			expense.Date = time.Now()
 		}
 		tagsJSON, _ := json.Marshal(expense.Tags)
-		_, err = stmt.Exec(expense.ID, expense.RecurringID, expense.Name, expense.Category, expense.Amount, expense.Currency, expense.Date, string(tagsJSON))
+		_, err = stmt.Exec(expense.ID, expense.RecurringID, expense.Name, expense.Category, expense.Amount, expense.Currency, expense.Date.Format(time.RFC3339), string(tagsJSON))
 		if err != nil {
 			return fmt.Errorf("failed to insert expense: %v", err)
 		}
@@ -386,9 +394,17 @@ func (s *sqliteStore) RemoveMultipleExpenses(ids []string) error {
 func scanSQLiteRecurringExpense(scanner interface{ Scan(...any) error }) (RecurringExpense, error) {
 	var re RecurringExpense
 	var tagsStr sql.NullString
-	err := scanner.Scan(&re.ID, &re.Name, &re.Amount, &re.Currency, &re.Category, &re.StartDate, &re.Interval, &re.Occurrences, &tagsStr)
+	var startDateStr sql.NullString
+	err := scanner.Scan(&re.ID, &re.Name, &re.Amount, &re.Currency, &re.Category, &startDateStr, &re.Interval, &re.Occurrences, &tagsStr)
 	if err != nil {
 		return RecurringExpense{}, err
+	}
+	if startDateStr.Valid && startDateStr.String != "" {
+		parsedDate, err := time.Parse(time.RFC3339, startDateStr.String)
+		if err != nil {
+			return RecurringExpense{}, fmt.Errorf("failed to parse start_date for recurring expense %s: %v", re.ID, err)
+		}
+		re.StartDate = parsedDate
 	}
 	if tagsStr.Valid && tagsStr.String != "" {
 		if err := json.Unmarshal([]byte(tagsStr.String), &re.Tags); err != nil {
@@ -446,7 +462,7 @@ func (s *sqliteStore) AddRecurringExpense(recurringExpense RecurringExpense) err
 		INSERT INTO recurring_expenses (id, name, amount, currency, category, start_date, interval, occurrences, tags)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	_, err = tx.Exec(ruleQuery, recurringExpense.ID, recurringExpense.Name, recurringExpense.Amount, recurringExpense.Currency, recurringExpense.Category, recurringExpense.StartDate, recurringExpense.Interval, recurringExpense.Occurrences, string(tagsJSON))
+	_, err = tx.Exec(ruleQuery, recurringExpense.ID, recurringExpense.Name, recurringExpense.Amount, recurringExpense.Currency, recurringExpense.Category, recurringExpense.StartDate.Format(time.RFC3339), recurringExpense.Interval, recurringExpense.Occurrences, string(tagsJSON))
 	if err != nil {
 		return fmt.Errorf("failed to insert recurring expense rule: %v", err)
 	}
@@ -463,7 +479,7 @@ func (s *sqliteStore) AddRecurringExpense(recurringExpense RecurringExpense) err
 		defer stmt.Close()
 		for _, exp := range expensesToAdd {
 			expTagsJSON, _ := json.Marshal(exp.Tags)
-			_, err = stmt.Exec(exp.ID, exp.RecurringID, exp.Name, exp.Category, exp.Amount, exp.Currency, exp.Date, string(expTagsJSON))
+			_, err = stmt.Exec(exp.ID, exp.RecurringID, exp.Name, exp.Category, exp.Amount, exp.Currency, exp.Date.Format(time.RFC3339), string(expTagsJSON))
 			if err != nil {
 				return fmt.Errorf("failed to insert expense: %v", err)
 			}
@@ -488,7 +504,7 @@ func (s *sqliteStore) UpdateRecurringExpense(id string, recurringExpense Recurri
 		SET name = ?, amount = ?, category = ?, start_date = ?, interval = ?, occurrences = ?, tags = ?, currency = ?
 		WHERE id = ?
 	`
-	res, err := tx.Exec(ruleQuery, recurringExpense.Name, recurringExpense.Amount, recurringExpense.Category, recurringExpense.StartDate, recurringExpense.Interval, recurringExpense.Occurrences, string(tagsJSON), recurringExpense.Currency, id)
+	res, err := tx.Exec(ruleQuery, recurringExpense.Name, recurringExpense.Amount, recurringExpense.Category, recurringExpense.StartDate.Format(time.RFC3339), recurringExpense.Interval, recurringExpense.Occurrences, string(tagsJSON), recurringExpense.Currency, id)
 	if err != nil {
 		return fmt.Errorf("failed to update recurring expense rule: %v", err)
 	}
@@ -521,7 +537,7 @@ func (s *sqliteStore) UpdateRecurringExpense(id string, recurringExpense Recurri
 		defer stmt.Close()
 		for _, exp := range expensesToAdd {
 			expTagsJSON, _ := json.Marshal(exp.Tags)
-			_, err = stmt.Exec(exp.ID, exp.RecurringID, exp.Name, exp.Category, exp.Amount, exp.Currency, exp.Date, string(expTagsJSON))
+			_, err = stmt.Exec(exp.ID, exp.RecurringID, exp.Name, exp.Category, exp.Amount, exp.Currency, exp.Date.Format(time.RFC3339), string(expTagsJSON))
 			if err != nil {
 				return fmt.Errorf("failed to insert expense: %v", err)
 			}
