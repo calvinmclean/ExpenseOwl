@@ -52,7 +52,7 @@ func main() {
 		log.Fatalf("Failed to get source config: %v", err)
 	}
 
-	sourceExpenses, err := sourceStore.GetAllExpenses()
+	sourceExpenses, err := sourceStore.GetAllExpenses(nil, nil)
 	if err != nil {
 		log.Fatalf("Failed to get source expenses: %v", err)
 	}

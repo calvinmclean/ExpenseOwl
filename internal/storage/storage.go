@@ -31,7 +31,7 @@ type Storage interface {
 	UpdateRecurringExpense(id string, recurringExpense RecurringExpense, updateAll bool) error
 
 	// Expenses
-	GetAllExpenses() ([]Expense, error)
+	GetAllExpenses(startDate, endDate *time.Time) ([]Expense, error)
 	GetExpense(id string) (Expense, error)
 	AddExpense(expense Expense) error
 	RemoveExpense(id string) error
