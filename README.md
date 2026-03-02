@@ -176,7 +176,7 @@ With the exception of [Data backends](#data-backends), all configuration of Expe
 
 ### Data Backends
 
-ExpenseOwl supports two data backends - JSON (default), and Postgres. Postgres was added with v4.0 of the app primarily for homelabbers to reuse their Postgres instances as needed for better backup compatibility.
+ExpenseOwl supports two data backends - JSON (default), Postgres, and SQLite. Postgres was added with v4.0 of the app primarily for homelabbers to reuse their Postgres instances as needed for better backup compatibility.
 
 Ideally, you need not configure anything differently for the JSON backend. ExpenseOwl automatically creates the data directory and the `.json` files. You may, however, want to mount a specific volume to `/app/data` within the container for persistence.
 
@@ -191,6 +191,13 @@ For configuring Postgres, use the following environment variables:
 | STORAGE_PASS | testpassword | the password for the Postgres user |
 
 The app has been tested with SSL mode for Postgres set to disable for simplicity.
+
+For configuring SQLite, use the following environment variables:
+
+| Variable | Sample Value | Details |
+| --- | --- | --- |
+| STORAGE_TYPE | sqlite | defaults to `json`, hence JSON backend is default |
+| STORAGE_URL | "./data/expenseowl.db" | this is the SQLite file or `:memory:` for in-memory storage|
 
 > [!TIP]
 > The environment variables can be set for using `-e` in the command line or `environment` in a compose stack.
