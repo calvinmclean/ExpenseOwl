@@ -140,6 +140,16 @@ function getMonthExpenses(expenses) {
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
+function getCustomDateRangeExpenses(expenses, startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    return expenses.filter(exp => {
+        const expDate = new Date(exp.date);
+        return expDate >= start && expDate <= end;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
 function escapeHTML(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/[&<>'"]/g,

@@ -109,6 +109,12 @@ header {
     font-weight: bold;
     min-width: 200px;
     text-align: center;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.current-month:hover {
+    color: var(--accent);
 }
 
 .chart-container {
@@ -701,6 +707,11 @@ header {
         font-size: 1rem;
         text-align: center;
         min-width: 150px;
+        cursor: pointer;
+    }
+    
+    .current-month:hover {
+        color: var(--accent);
     }
 
     .date-column,
@@ -763,6 +774,20 @@ header {
 
     .expense-form {
         grid-template-columns: 1fr;
+    }
+
+    .date-range-inputs {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .date-input {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .date-separator {
+        display: none;
     }
 }
 
@@ -872,4 +897,47 @@ header {
 
 .table-controls label:hover {
     background-color: var(--accent);
+}
+
+/* Date Range Picker Styles */
+.date-range-picker {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.date-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.date-input {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.date-separator {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.date-range-active .current-month {
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.date-range-active .current-month:hover {
+    text-decoration: underline;
 }
