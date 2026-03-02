@@ -161,6 +161,10 @@ function formatDateForInput(date) {
     return `${year}-${month}-${day}`;
 }
 
+function toRFC3339(date) {
+    return date.toISOString();
+}
+
 function escapeHTML(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/[&<>'"]/g,

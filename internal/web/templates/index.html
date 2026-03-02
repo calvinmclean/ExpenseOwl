@@ -360,7 +360,23 @@
                 currentCurrency = config.currency;
                 startDate = config.startDate;
                 
-                const response = await fetch('/expenses');
+                // Get date range for fetching expenses
+                let fetchStart, fetchEnd;
+                if (dateRangeActive && customDateRange.start && customDateRange.end) {
+                    const [startYear, startMonth, startDay] = customDateRange.start.split('-').map(Number);
+                    const [endYear, endMonth, endDay] = customDateRange.end.split('-').map(Number);
+                    fetchStart = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+                    fetchEnd = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
+                } else {
+                    const bounds = getMonthBounds(currentDate);
+                    fetchStart = bounds.start;
+                    fetchEnd = bounds.end;
+                }
+                
+                // Fetch expenses with date range
+                const startParam = encodeURIComponent(toRFC3339(fetchStart));
+                const endParam = encodeURIComponent(toRFC3339(fetchEnd));
+                const response = await fetch(`/expenses?start_date=${startParam}&end_date=${endParam}`);
                 if (!response.ok) throw new Error('Failed to fetch data');
                 const data = await response.json();
                 allExpenses = Array.isArray(data) ? data : (data && Array.isArray(data.expenses) ? data.expenses : []);
@@ -374,7 +390,9 @@
                 
                 const uniqueCategories = [...new Set(allExpenses.map(exp => exp.category))];
                 assignCategoryColors(uniqueCategories);
-                updateMonthDisplay();
+                if (!dateRangeActive) {
+                    updateMonthDisplay();
+                }
                 updateChartAndLegend();
                 setupTagInput();
             } catch (error) {
@@ -474,7 +492,7 @@
             }
             currentDate.setMonth(currentDate.getMonth() - 1);
             updateMonthDisplay();
-            updateChartAndLegend();
+            initialize(); // Fetch data for the new month
         });
 
         document.getElementById('nextMonth').addEventListener('click', () => {
@@ -483,7 +501,7 @@
             }
             currentDate.setMonth(currentDate.getMonth() + 1);
             updateMonthDisplay();
-            updateChartAndLegend();
+            initialize(); // Fetch data for the new month
         });
 
         document.getElementById('toggleExpenseFormBtn').addEventListener('click', function() {
@@ -587,7 +605,7 @@
                 document.getElementById('dateRangePicker').style.display = 'none';
                 document.getElementById('prevMonth').style.display = 'none';
                 document.getElementById('nextMonth').style.display = 'none';
-                updateChartAndLegend();
+                initialize(); // Fetch new data with date range
             }
         });
 
@@ -599,7 +617,7 @@
             document.getElementById('prevMonth').style.display = 'inline-flex';
             document.getElementById('nextMonth').style.display = 'inline-flex';
             updateMonthDisplay();
-            updateChartAndLegend();
+            initialize(); // Fetch new data for current month
         });
 
         function formatDateShort(dateString) {

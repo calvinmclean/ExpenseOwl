@@ -196,7 +196,41 @@ func (h *Handler) GetExpenses(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "Method not allowed"})
 		return
 	}
-	expenses, err := h.storage.GetAllExpenses()
+
+	// Parse optional date range query parameters
+	var startDate, endDate *time.Time
+	startDateStr := r.URL.Query().Get("start_date")
+	endDateStr := r.URL.Query().Get("end_date")
+	showAll := r.URL.Query().Get("all") == "true"
+
+	if showAll {
+		// Return all expenses without date filtering
+		startDate = nil
+		endDate = nil
+	} else if startDateStr != "" && endDateStr != "" {
+		// Both dates provided - use them
+		parsedStart, err := time.Parse(time.RFC3339, startDateStr)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid start_date format. Use RFC3339 format (e.g., 2026-03-01T00:00:00Z)"})
+			return
+		}
+		parsedEnd, err := time.Parse(time.RFC3339, endDateStr)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid end_date format. Use RFC3339 format (e.g., 2026-03-31T23:59:59Z)"})
+			return
+		}
+		startDate = &parsedStart
+		endDate = &parsedEnd
+	} else {
+		// Default to current month if no dates provided
+		now := time.Now()
+		startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
+		startDate = &startOfMonth
+		endDate = &endOfMonth
+	}
+
+	expenses, err := h.storage.GetAllExpenses(startDate, endDate)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to retrieve expenses"})
 		log.Printf("API ERROR: Failed to retrieve expenses: %v\n", err)
