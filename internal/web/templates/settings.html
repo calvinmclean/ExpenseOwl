@@ -93,17 +93,32 @@
             </div>
             <div class="form-container half-width">
                 <h2 align="center">Import/Export Data</h2>
-                <div class="export-buttons">
-                    <div class="export-options">
-                        <a href="/export/csv" id="csv-export-file" class="nav-button" download="expenses.csv">Export to CSV</a>
+                <div class="export-section">
+                    <div class="export-date-range">
+                        <div class="date-range-field">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="export-start-date-toggle" class="styled-checkbox">
+                                <span>From:</span>
+                            </label>
+                            <input type="date" id="export-start-date" class="date-input" disabled value="">
+                        </div>
+                        <div class="date-range-field">
+                            <label for="export-end-date">To:</label>
+                            <input type="date" id="export-end-date" class="date-input">
+                        </div>
                     </div>
-                    <div class="import-option">
-                        <label for="csv-import-file" class="nav-button">Import from CSV</label>
-                        <input type="file" id="csv-import-file" accept=".csv" style="display: none;">
-                    </div>
-                    <div class="import-option">
-                        <label for="csv-import-file-old" class="nav-button">Import from ExpenseOwl v3.20-</label>
-                        <input type="file" id="csv-import-file-old" accept=".csv" style="display: none;">
+                    <div class="export-buttons">
+                        <div class="export-options">
+                            <a href="/export/csv" id="csv-export-file" class="nav-button" download="expenses.csv">Export to CSV</a>
+                        </div>
+                        <div class="import-option">
+                            <label for="csv-import-file" class="nav-button">Import from CSV</label>
+                            <input type="file" id="csv-import-file" accept=".csv" style="display: none;">
+                        </div>
+                        <div class="import-option">
+                            <label for="csv-import-file-old" class="nav-button">Import from ExpenseOwl v3.20-</label>
+                            <input type="file" id="csv-import-file-old" accept=".csv" style="display: none;">
+                        </div>
                     </div>
                 </div>
                 <div id="importMessage" class="form-message"></div>
@@ -679,6 +694,58 @@
         }
 
         // --- Import/Export ---
+        function initializeExportDateRange() {
+            const endDateInput = document.getElementById('export-end-date');
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            endDateInput.value = `${year}-${month}-${day}`;
+            
+            // Set up start date checkbox toggle
+            const startToggle = document.getElementById('export-start-date-toggle');
+            const startDateInput = document.getElementById('export-start-date');
+            
+            // Set default value to last month (visible but disabled initially)
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const lmYear = lastMonth.getFullYear();
+            const lmMonth = String(lastMonth.getMonth() + 1).padStart(2, '0');
+            const lmDay = String(lastMonth.getDate()).padStart(2, '0');
+            startDateInput.value = `${lmYear}-${lmMonth}-${lmDay}`;
+            
+            startToggle.addEventListener('change', () => {
+                startDateInput.disabled = !startToggle.checked;
+                updateExportUrl();
+            });
+            
+            updateExportUrl();
+        }
+
+        function updateExportUrl() {
+            const startToggle = document.getElementById('export-start-date-toggle');
+            const startDate = document.getElementById('export-start-date').value;
+            const endDate = document.getElementById('export-end-date').value;
+            const exportLink = document.getElementById('csv-export-file');
+            
+            let url = '/export/csv';
+            const params = [];
+            
+            if (startToggle.checked && startDate) {
+                params.push(`start_date=${startDate}`);
+            }
+            if (endDate) {
+                params.push(`end_date=${endDate}`);
+            }
+            
+            if (params.length > 0) url += '?' + params.join('&');
+            
+            exportLink.href = url;
+        }
+
+        document.getElementById('export-start-date-toggle').addEventListener('change', updateExportUrl);
+        document.getElementById('export-start-date').addEventListener('change', updateExportUrl);
+        document.getElementById('export-end-date').addEventListener('change', updateExportUrl);
+
         async function handleCsvImport(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -791,6 +858,7 @@
                 renderCategories();
                 populateCurrencySelect();
                 populateStartDateInput();
+                initializeExportDateRange();
                 document.getElementById('recurringCategory').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
                 document.getElementById('editRecurringCategory').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
                 renderRecurringExpenses(recurringExpenses);

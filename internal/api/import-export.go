@@ -19,12 +19,40 @@ func (h *Handler) ExportCSV(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "Method not allowed"})
 		return
 	}
-	expenses, err := h.storage.GetAllExpenses()
+
+	// Parse date range parameters
+	startDateStr := r.URL.Query().Get("start_date")
+	endDateStr := r.URL.Query().Get("end_date")
+
+	var startDate, endDate *time.Time
+
+	if startDateStr != "" {
+		parsedStart, err := time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid start_date format. Use YYYY-MM-DD"})
+			return
+		}
+		startDate = &parsedStart
+	}
+
+	if endDateStr != "" {
+		parsedEnd, err := time.Parse("2006-01-02", endDateStr)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid end_date format. Use YYYY-MM-DD"})
+			return
+		}
+		// Set end of day for the end date
+		parsedEnd = parsedEnd.Add(24 * time.Hour).Add(-1 * time.Millisecond)
+		endDate = &parsedEnd
+	}
+
+	expenses, err := h.storage.GetAllExpenses(startDate, endDate)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to retrieve expenses"})
 		log.Printf("API ERROR: Failed to retrieve expenses for CSV export: %v\n", err)
 		return
 	}
+
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=expenses.csv")
 	writer := csv.NewWriter(w)

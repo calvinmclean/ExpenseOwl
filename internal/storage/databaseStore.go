@@ -222,9 +222,24 @@ func scanExpense(scanner interface{ Scan(...any) error }) (Expense, error) {
 	return expense, nil
 }
 
-func (s *databaseStore) GetAllExpenses() ([]Expense, error) {
-	query := `SELECT id, recurring_id, name, category, amount, date, tags FROM expenses ORDER BY date DESC`
-	rows, err := s.db.Query(query)
+func (s *databaseStore) GetAllExpenses(startDate, endDate *time.Time) ([]Expense, error) {
+	var query string
+	var args []interface{}
+
+	if startDate != nil && endDate != nil {
+		query = `SELECT id, recurring_id, name, category, amount, date, tags FROM expenses WHERE date >= $1 AND date <= $2 ORDER BY date DESC`
+		args = []interface{}{*startDate, *endDate}
+	} else if startDate != nil {
+		query = `SELECT id, recurring_id, name, category, amount, date, tags FROM expenses WHERE date >= $1 ORDER BY date DESC`
+		args = []interface{}{*startDate}
+	} else if endDate != nil {
+		query = `SELECT id, recurring_id, name, category, amount, date, tags FROM expenses WHERE date <= $1 ORDER BY date DESC`
+		args = []interface{}{*endDate}
+	} else {
+		query = `SELECT id, recurring_id, name, category, amount, date, tags FROM expenses ORDER BY date DESC`
+	}
+
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query expenses: %v", err)
 	}

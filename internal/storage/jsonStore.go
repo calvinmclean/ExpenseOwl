@@ -329,13 +329,31 @@ func (s *jsonStore) UpdateRecurringExpense(id string, recurringExpense Recurring
 
 // Expenses
 
-func (s *jsonStore) GetAllExpenses() ([]Expense, error) {
+func (s *jsonStore) GetAllExpenses(startDate, endDate *time.Time) ([]Expense, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	data, err := s.readExpensesFile(s.filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read storage file: %v", err)
 	}
+
+	// Filter by date range in-place if provided
+	if startDate != nil || endDate != nil {
+		validIndex := 0
+		for _, exp := range data.Expenses {
+			if startDate != nil && exp.Date.Before(*startDate) {
+				continue
+			}
+			if endDate != nil && exp.Date.After(*endDate) {
+				continue
+			}
+			data.Expenses[validIndex] = exp
+			validIndex++
+		}
+		// Truncate the slice to the valid length
+		return data.Expenses[:validIndex], nil
+	}
+
 	return data.Expenses, nil
 }
 
