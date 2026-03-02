@@ -141,9 +141,13 @@ function getMonthExpenses(expenses) {
 }
 
 function getCustomDateRangeExpenses(expenses, startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    // Parse dates as local time to match user's timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    
+    const start = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+    const end = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
+    
     return expenses.filter(exp => {
         const expDate = new Date(exp.date);
         return expDate >= start && expDate <= end;
