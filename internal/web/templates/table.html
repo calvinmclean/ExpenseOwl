@@ -483,10 +483,15 @@
             
             if (picker.style.display === 'none' || picker.style.display === '') {
                 picker.style.display = 'flex';
-                // Set default dates to current month
-                const { start, end } = getMonthBounds(currentDate);
-                document.getElementById('startDatePicker').value = start.toISOString().split('T')[0];
-                document.getElementById('endDatePicker').value = end.toISOString().split('T')[0];
+                // Set dates: if date range is active, use current range; otherwise use current month
+                if (dateRangeActive && customDateRange.start && customDateRange.end) {
+                    document.getElementById('startDatePicker').value = customDateRange.start;
+                    document.getElementById('endDatePicker').value = customDateRange.end;
+                } else {
+                    const { start, end } = getMonthBounds(currentDate);
+                    document.getElementById('startDatePicker').value = start.toISOString().split('T')[0];
+                    document.getElementById('endDatePicker').value = end.toISOString().split('T')[0];
+                }
             } else {
                 picker.style.display = 'none';
             }
