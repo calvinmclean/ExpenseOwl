@@ -101,9 +101,9 @@ function updateMonthDisplay() {
 function getMonthBounds(date) {
     const localDate = new Date(date);
     if (startDate === 1) {
-        const startLocal = new Date(localDate.getFullYear(), localDate.getMonth(), 1);
-        const endLocal = new Date(localDate.getFullYear(), localDate.getMonth() + 1, 0, 23, 59, 59, 999);
-        return { start: new Date(startLocal.toISOString()), end: new Date(endLocal.toISOString()) };
+        const start = new Date(localDate.getFullYear(), localDate.getMonth(), 1);
+        const end = new Date(localDate.getFullYear(), localDate.getMonth() + 1, 0, 23, 59, 59, 999);
+        return { start, end };
     }
     let thisMonthStartDate = startDate;
     let prevMonthStartDate = startDate;
@@ -118,17 +118,17 @@ function getMonthBounds(date) {
     prevMonthStartDate = Math.min(prevMonthStartDate, daysInPrevMonth);
 
     if (localDate.getDate() < thisMonthStartDate) {
-        const startLocal = new Date(prevYear, prevMonth, prevMonthStartDate);
-        const endLocal = new Date(currentYear, currentMonth, thisMonthStartDate - 1, 23, 59, 59, 999);
-        return { start: new Date(startLocal.toISOString()), end: new Date(endLocal.toISOString()) };
+        const start = new Date(prevYear, prevMonth, prevMonthStartDate);
+        const end = new Date(currentYear, currentMonth, thisMonthStartDate - 1, 23, 59, 59, 999);
+        return { start, end };
     } else {
         const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
         const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
         const daysInNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
         let nextMonthStartDate = Math.min(startDate, daysInNextMonth);
-        const startLocal = new Date(currentYear, currentMonth, thisMonthStartDate);
-        const endLocal = new Date(nextYear, nextMonth, nextMonthStartDate - 1, 23, 59, 59, 999);
-        return { start: new Date(startLocal.toISOString()), end: new Date(endLocal.toISOString()) };
+        const start = new Date(currentYear, currentMonth, thisMonthStartDate);
+        const end = new Date(nextYear, nextMonth, nextMonthStartDate - 1, 23, 59, 59, 999);
+        return { start, end };
     }
 }
 
@@ -148,6 +148,13 @@ function getCustomDateRangeExpenses(expenses, startDate, endDate) {
         const expDate = new Date(exp.date);
         return expDate >= start && expDate <= end;
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function escapeHTML(str) {

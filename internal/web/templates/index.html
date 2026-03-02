@@ -562,8 +562,8 @@
                     document.getElementById('endDatePicker').value = customDateRange.end;
                 } else {
                     const { start, end } = getMonthBounds(currentDate);
-                    document.getElementById('startDatePicker').value = start.toISOString().split('T')[0];
-                    document.getElementById('endDatePicker').value = end.toISOString().split('T')[0];
+                    document.getElementById('startDatePicker').value = formatDateForInput(start);
+                    document.getElementById('endDatePicker').value = formatDateForInput(end);
                 }
             } else {
                 picker.style.display = 'none';
@@ -598,7 +598,8 @@
         });
 
         function formatDateShort(dateString) {
-            const date = new Date(dateString);
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
