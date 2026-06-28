@@ -53,6 +53,7 @@
             <button id="prevMonth" class="nav-button"><i class="fa-solid fa-arrow-left"></i></button>
             <div class="current-month" id="currentMonth"></div>
             <button id="nextMonth" class="nav-button"><i class="fa-solid fa-arrow-right"></i></button>
+            <button id="resetDateRange" class="nav-button" style="display: none;" data-tooltip="Reset Date Range"><i class="fa-solid fa-rotate-left"></i> Reset</button>
         </div>
 
         <div class="date-range-picker" id="dateRangePicker" style="display: none;">
@@ -160,6 +161,14 @@
         let selectedTags = new Set();
         let dateRangeActive = false;
         let customDateRange = { start: null, end: null };
+
+        // Restore date range state from session storage when switching views
+        const savedState = loadDateRangeState();
+        if (savedState) {
+            currentDate = savedState.currentDate;
+            dateRangeActive = savedState.dateRangeActive;
+            customDateRange = savedState.customDateRange;
+        }
 
         function assignCategoryColors(categories) {
             categories.forEach((category, index) => {
@@ -348,6 +357,24 @@
             updateChartAndLegend();
         }
 
+        function updateDateRangeUI() {
+            const currentMonthEl = document.getElementById('currentMonth');
+            const resetBtn = document.getElementById('resetDateRange');
+            if (dateRangeActive && customDateRange.start && customDateRange.end) {
+                currentMonthEl.classList.add('date-range-active');
+                currentMonthEl.textContent = `${formatDateShort(customDateRange.start)} - ${formatDateShort(customDateRange.end)}`;
+                document.getElementById('prevMonth').style.display = 'none';
+                document.getElementById('nextMonth').style.display = 'none';
+                resetBtn.style.display = 'inline-flex';
+            } else {
+                currentMonthEl.classList.remove('date-range-active');
+                currentMonthEl.textContent = formatMonth(currentDate);
+                document.getElementById('prevMonth').style.display = 'inline-flex';
+                document.getElementById('nextMonth').style.display = 'inline-flex';
+                resetBtn.style.display = 'none';
+            }
+        }
+
         async function initialize() {
             try {
                 const configResponse = await fetch('/config');
@@ -390,9 +417,7 @@
                 
                 const uniqueCategories = [...new Set(allExpenses.map(exp => exp.category))];
                 assignCategoryColors(uniqueCategories);
-                if (!dateRangeActive) {
-                    updateMonthDisplay();
-                }
+                updateDateRangeUI();
                 updateChartAndLegend();
                 setupTagInput();
             } catch (error) {
@@ -491,7 +516,8 @@
                 document.getElementById('clearDateRange').click();
             }
             currentDate.setMonth(currentDate.getMonth() - 1);
-            updateMonthDisplay();
+            saveDateRangeState(currentDate, dateRangeActive, customDateRange);
+            updateDateRangeUI();
             initialize(); // Fetch data for the new month
         });
 
@@ -500,8 +526,13 @@
                 document.getElementById('clearDateRange').click();
             }
             currentDate.setMonth(currentDate.getMonth() + 1);
-            updateMonthDisplay();
+            saveDateRangeState(currentDate, dateRangeActive, customDateRange);
+            updateDateRangeUI();
             initialize(); // Fetch data for the new month
+        });
+
+        document.getElementById('resetDateRange').addEventListener('click', () => {
+            document.getElementById('clearDateRange').click();
         });
 
         document.getElementById('toggleExpenseFormBtn').addEventListener('click', function() {
@@ -600,11 +631,9 @@
             if (startDate && endDate) {
                 dateRangeActive = true;
                 customDateRange = { start: startDate, end: endDate };
-                document.getElementById('currentMonth').classList.add('date-range-active');
-                document.getElementById('currentMonth').textContent = `${formatDateShort(startDate)} - ${formatDateShort(endDate)}`;
+                saveDateRangeState(currentDate, dateRangeActive, customDateRange);
+                updateDateRangeUI();
                 document.getElementById('dateRangePicker').style.display = 'none';
-                document.getElementById('prevMonth').style.display = 'none';
-                document.getElementById('nextMonth').style.display = 'none';
                 initialize(); // Fetch new data with date range
             }
         });
@@ -612,19 +641,12 @@
         document.getElementById('clearDateRange').addEventListener('click', () => {
             dateRangeActive = false;
             customDateRange = { start: null, end: null };
-            document.getElementById('currentMonth').classList.remove('date-range-active');
+            saveDateRangeState(currentDate, dateRangeActive, customDateRange);
+            updateDateRangeUI();
             document.getElementById('dateRangePicker').style.display = 'none';
-            document.getElementById('prevMonth').style.display = 'inline-flex';
-            document.getElementById('nextMonth').style.display = 'inline-flex';
-            updateMonthDisplay();
             initialize(); // Fetch new data for current month
         });
 
-        function formatDateShort(dateString) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            const date = new Date(year, month - 1, day);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
     </script>
 </body>
 </html>

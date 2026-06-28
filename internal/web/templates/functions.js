@@ -177,3 +177,41 @@ function escapeHTML(str) {
         }[tag] || tag)
     );
 }
+
+const DATE_RANGE_KEY = 'expenseowl.dateRange';
+
+function saveDateRangeState(currentDate, dateRangeActive, customDateRange) {
+    const state = {
+        currentDate: currentDate.toISOString(),
+        dateRangeActive,
+        customDateRange
+    };
+    sessionStorage.setItem(DATE_RANGE_KEY, JSON.stringify(state));
+}
+
+function loadDateRangeState() {
+    try {
+        const stored = sessionStorage.getItem(DATE_RANGE_KEY);
+        if (!stored) return null;
+        const state = JSON.parse(stored);
+        if (!state || typeof state.dateRangeActive !== 'boolean') return null;
+        const currentDate = new Date(state.currentDate);
+        if (isNaN(currentDate.getTime())) return null;
+        return {
+            currentDate,
+            dateRangeActive: state.dateRangeActive,
+            customDateRange: {
+                start: state.customDateRange?.start || null,
+                end: state.customDateRange?.end || null
+            }
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+function formatDateShort(dateString) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
