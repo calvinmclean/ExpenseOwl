@@ -239,13 +239,13 @@
                 const categoryData = calculateCategoryBreakdown(monthExpenses);
                 updateCashflow(monthExpenses);
                 createPieChart(categoryData);
-                updateLegend(categoryData);
+                updateLegend(monthExpenses, categoryData);
             }
         }
 
         function updateCashflow(expenses) {
             const income = calculateIncome(expenses);
-            const expenseTotal = calculateExpenses(expenses);
+            const expenseTotal = calculateExpenses(expenses.filter(exp => !disabledCategories.has(exp.category)));
             const balance = income - expenseTotal;
             
             document.getElementById('cashflow-income').textContent = formatCurrency(income);
@@ -297,10 +297,9 @@
             });
         }
 
-        function updateLegend(categoryData) {
+        function updateLegend(monthExpenses, categoryData) {
             const legendContainer = document.getElementById('customLegend');
             legendContainer.innerHTML = '';
-            const monthExpenses = getMonthExpenses(allExpenses);
             const currentMonthCategories = [...new Set(monthExpenses
                 .filter(exp => exp.amount < 0)
                 .map(exp => exp.category))];
